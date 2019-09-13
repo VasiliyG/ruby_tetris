@@ -11,7 +11,8 @@ class Brick
   def initialize
     @id = "#{Time.now.to_i}_#{rand(5_000)}"
     @brick = Gosu::Image.new("media/brick.png")
-    @x = @y = 0.0
+    @x = SPAWN_X_LINE
+    @y = 0.0
     @last_turn_left = @last_turn_right = @last_turn_down = Time.now.to_f
   end
 
@@ -56,7 +57,8 @@ class Brick
   end
 
   def go_home
-    @x = @y = 0
+    @x = SPAWN_X_LINE
+    @y = 0
   end
 
   def touched_with(current_brick)
@@ -72,6 +74,14 @@ class Brick
 
   def in_line?(line_height)
     line_height.between?(y_range[0], y_range[1])
+  end
+
+  def on_same_vertical?(brick)
+    @x.between?(brick.x_range[0], brick.x_range[1])
+  end
+
+  def on_bottom?(brick)
+    @y < brick.y_range[0]
   end
 
   def draw

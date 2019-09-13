@@ -2,7 +2,8 @@ require 'gosu'
 require_relative 'lib/brick'
 WIDTH = 660
 HEIGHT = 480
-
+FULL_LINE_BRICKS_COUNT = 12
+SPAWN_X_LINE = ((WIDTH / Brick::BRICK_SIZE[0]) / 2) * Brick::BRICK_SIZE[0]
 class RubyTetris < Gosu::Window
   FALL_TIME = 0.5
   attr_accessor :fall_time
@@ -27,8 +28,10 @@ class RubyTetris < Gosu::Window
 
   def check_bricks
     @current_brick.go_home if current_touched_with_bricks? && @current_brick.in_spawn_zone?
-    @bricks << Brick.new if @current_brick.drop_down? || current_touched_another?
-    remove_full_lines
+    if @current_brick.drop_down? || current_touched_another?
+      @bricks << Brick.new
+      remove_full_lines
+    end
   end
 
   def set_current_brick
@@ -60,12 +63,30 @@ class RubyTetris < Gosu::Window
   end
 
   def remove_full_lines
+    return if inline_bricks.nil?
+    destroy_each_brick(inline_bricks)
+  end
+
+  def inline_bricks
     (HEIGHT / Brick::BRICK_SIZE[1]).times do |line_num|
       line_height = Brick::BRICK_SIZE[1] * line_num
-      in_line_bricks = @bricks.find{ |b| b.in_line?(line_height) }
-      p ' = ' * 20
-      p in_line_bricks.count
-      p ' = ' * 20
+      in_line_bricks = @bricks.find_all{ |b| b.in_line?(line_height) }
+      return in_line_bricks if in_line_bricks.size >= FULL_LINE_BRICKS_COUNT
+    end
+    nil
+  end
+
+  def destroy_each_brick(inline_bricks)
+    inline_bricks.each do |brick|
+      @bricks.reject!{ |b| b.id == brick.id}
+      fall_upper(brick)
+    end
+  end
+
+  def fall_upper(destroyed_brick)
+    @bricks.each do |brick|
+      next unless brick.on_same_vertical?(destroyed_brick) || brick.on_bottom?(destroyed_brick)
+      brick.turn_down
     end
   end
 end
