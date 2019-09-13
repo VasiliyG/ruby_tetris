@@ -3,6 +3,7 @@ require 'gosu'
 class Brick
 
   BOTTOM_LINE = 400
+  SPAWN_LINE = 70
   BRICK_SIZE = [60, 60].freeze
 
   attr_accessor :id
@@ -45,6 +46,14 @@ class Brick
     @y > BOTTOM_LINE
   end
 
+  def in_spawn_zone?
+    @y < SPAWN_LINE
+  end
+
+  def go_home
+    @x = @y = 0
+  end
+
   def touched_with(current_brick)
     (current_brick.x_range[0].between?(x_range[0], x_range[1]) || current_brick.x_range[1].between?(x_range[0], x_range[1])) &&
       (current_brick.y_range[0].between?(y_range[0], y_range[1]) || current_brick.y_range[1].between?(y_range[0], y_range[1]))
@@ -74,14 +83,20 @@ class RubyTetris < Gosu::Window
   end
 
   def check_bricks
-    @bricks << Brick.new if @current_brick.drop_down? || touched_another?
+    @current_brick.go_home if current_touched_with_bricks? && @current_brick.in_spawn_zone?
+    @bricks << Brick.new if @current_brick.drop_down? || current_touched_another?
   end
 
   def set_current_brick
     @current_brick = @bricks.last
   end
 
-  def touched_another?
+  def current_touched_another?
+    return false if @current_brick.in_spawn_zone?
+    current_touched_with_bricks?
+  end
+
+  def current_touched_with_bricks?
     @bricks.reject{ |b| b.id == @current_brick.id }.each do |brick|
       return true if brick.touched_with(@current_brick)
     end
