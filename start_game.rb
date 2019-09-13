@@ -3,8 +3,12 @@ require 'gosu'
 class Brick
 
   BOTTOM_LINE = 400
+  BRICK_SIZE = [60, 60].freeze
+
+  attr_accessor :id
 
   def initialize
+    @id = "#{Time.now.to_i}_#{rand(5_000)}"
     @brick = Gosu::Image.new("media/brick.png")
     @x = @y = 0.0
   end
@@ -25,12 +29,25 @@ class Brick
     @y += 1
   end
 
+  def x_range
+    [@x - BRICK_SIZE[0] / 2, @x + BRICK_SIZE[0] / 2]
+  end
+
+  def y_range
+    [@y - BRICK_SIZE[1] / 2, @y + BRICK_SIZE[1] / 2]
+  end
+
   def current_coordinate
     "#{@x} #{@y}"
   end
 
   def drop_down?
     @y > BOTTOM_LINE
+  end
+
+  def touched_with(current_brick)
+    (current_brick.x_range[0].between?(x_range[0], x_range[1]) || current_brick.x_range[1].between?(x_range[0], x_range[1])) &&
+      (current_brick.y_range[0].between?(y_range[0], y_range[1]) || current_brick.y_range[1].between?(y_range[0], y_range[1]))
   end
 
   def draw
@@ -57,17 +74,24 @@ class RubyTetris < Gosu::Window
   end
 
   def check_bricks
-    @bricks << Brick.new if @current_brick.drop_down?
+    @bricks << Brick.new if @current_brick.drop_down? || touched_another?
   end
 
   def set_current_brick
     @current_brick = @bricks.last
   end
 
+  def touched_another?
+    @bricks.reject{ |b| b.id == @current_brick.id }.each do |brick|
+      return true if brick.touched_with(@current_brick)
+    end
+    false
+  end
+
   def draw
     # @background_image.draw(0, 0, 0)
     @bricks.each(&:draw)
-    @coordinate_text.draw_text("Current brick coodinate: #{@current_brick.current_coordinate}", 10, 10, 0, 1.0, 1.0, Gosu::Color::YELLOW)
+    @coordinate_text.draw_text("Curr brick coord: #{@current_brick.current_coordinate}. Brick count: #{@bricks.size}", 10, 10, 0, 1.0, 1.0, Gosu::Color::YELLOW)
   end
 end
 
