@@ -80,6 +80,9 @@ class RubyTetris < Gosu::Window
     @current_brick.turn_down if Gosu.button_down? Gosu::KB_DOWN or Gosu.button_down? Gosu::GP_DOWN
     check_bricks
     set_current_brick
+    p ' = ' * 20
+    p Time.now.seconds
+    p ' = ' * 20
   end
 
   def check_bricks
