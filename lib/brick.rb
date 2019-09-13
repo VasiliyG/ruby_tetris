@@ -70,6 +70,10 @@ class Brick
     @y += FALL_STEP
   end
 
+  def in_line?(line_height)
+    line_height.between?(y_range[0], y_range[1])
+  end
+
   def draw
     @brick.draw_rot(@x, @y, 0, 0)
   end
