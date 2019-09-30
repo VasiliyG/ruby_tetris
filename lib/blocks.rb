@@ -1,18 +1,24 @@
 require_relative 'block'
 require_relative 'grid_brick'
 
+BLOCK_COLORS = Dir["media/*block.png"]
+
+# Blocks controls class
 class Blocks
   X_OFFSET = 200
   Y_OFFSET = 50
   DROP_DELAY = 0.2
+  MOVE_DELAY = 0.1
 
-  attr_accessor :matrix, :last_drop_time
+  attr_accessor :matrix, :last_drop_time, :last_move_right_time, :last_move_left_time
 
   def initialize(blocks_in_width, block_in_tall)
     @blocks_in_width = blocks_in_width
     @block_in_tall = block_in_tall
     @matrix = init_new_blocks_matrix
     @last_drop_time = Time.now.to_f
+    @last_move_right_time = Time.now.to_f
+    @last_move_left_time = Time.now.to_f
   end
 
   def no_active_blocks?
@@ -20,10 +26,17 @@ class Blocks
   end
 
   def spawn_new_figure
-    @matrix[0][5] = Block.new
-    @matrix[0][6] = Block.new
-    @matrix[1][6] = Block.new
-    @matrix[0][7] = Block.new
+    block_color = BLOCK_COLORS[rand(BLOCK_COLORS.size)]
+    @matrix[0][5] = Block.new(block_color)
+    @matrix[0][6] = Block.new(block_color)
+    @matrix[1][6] = Block.new(block_color)
+    @matrix[0][7] = Block.new(block_color)
+  end
+
+  def force_drop_active_blocks
+    @last_drop_time = Time.now.to_f - DROP_DELAY * 2
+
+    drop_active_blocks
   end
 
   def drop_active_blocks
@@ -42,6 +55,28 @@ class Blocks
     [@matrix[0], @matrix[1]].flatten.find_all { |b| !b&.grid_block? }.empty?
   end
 
+  def move_left_active_blocks
+    return if Time.now.to_f < @last_move_left_time + MOVE_DELAY
+
+    @last_move_left_time = Time.now.to_f
+    move_active_block(left: true)
+  end
+
+  def move_right_active_blocks
+    return if Time.now.to_f < @last_move_right_time + MOVE_DELAY
+
+    @last_move_right_time = Time.now.to_f
+    move_active_block(right: true)
+  end
+
+  def can_move_left?
+    can_move(left: true)
+  end
+
+  def can_move_right?
+    can_move(right: true)
+  end
+
   def draw
     @matrix.each_with_index do |row, y_index|
       row.each_with_index do |block, x_index|
@@ -54,6 +89,54 @@ class Blocks
   end
 
   private
+
+  def move_active_block(left: false, right: false)
+    return if left && !can_move_left? || right && !can_move_right?
+
+    active_rows_indexes.reverse.each do |index|
+      blocks = @matrix[index]
+      blocks = blocks.reverse if right
+      blocks.each_with_index do |block, block_index|
+        next if block.nil? || !block.active || block_index.zero?
+        offset_index = if left
+                         block_index - 1
+                       elsif right
+                         @blocks_in_width - block_index
+                       else
+                         block_index
+                       end
+        replace_index =  if left
+                           block_index
+                         elsif right
+                           @blocks_in_width - block_index - 1
+                         end
+
+        offset_block = @matrix[index][offset_index]
+        @matrix[index][offset_index] = block
+        @matrix[index][replace_index] = offset_block
+      end
+    end
+  end
+
+  def can_move(left: false, right: false)
+    active_rows_indexes.reverse.map do |index|
+      @matrix[index].each_with_index.map do |block, block_index|
+        next if block.nil? || !block.active
+        next_block = if left
+                       @matrix[index][block_index - 1]
+                     elsif right
+                       @matrix[index][block_index + 1]
+                     end
+          if next_block && !next_block.grid_block? && !next_block.active
+            block
+          elsif left && !block_index.zero? || right && (block_index + 1) != @blocks_in_width
+            nil
+          else
+            block
+          end
+      end
+    end.flatten.compact.empty?
+  end
 
   def deactivate_blocks
     active_rows_indexes.reverse.each do |index|

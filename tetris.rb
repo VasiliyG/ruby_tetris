@@ -7,13 +7,13 @@ HEIGHT = 900
 BLOCKS_IN_TALL = 20
 BLOCKS_IN_WIDTH = 10
 
+# Simple tetris game
 class Tetris < Gosu::Window
-
   attr_accessor :score, :active_game
 
   def initialize
     super WIDTH, HEIGHT
-    self.caption = "Tetris Game"
+    self.caption = 'Tetris Game'
     @coordinate_text = Gosu::Font.new(20)
     @blocks = Blocks.new(BLOCKS_IN_WIDTH, BLOCKS_IN_TALL)
     @score = 0
@@ -21,9 +21,12 @@ class Tetris < Gosu::Window
   end
 
   def update
-    if @active_game
-      make_game
-    end
+    return unless @active_game
+
+    make_game
+    @blocks.move_left_active_blocks if Gosu.button_down? Gosu::KB_LEFT
+    @blocks.move_right_active_blocks if Gosu.button_down? Gosu::KB_RIGHT
+    @blocks.force_drop_active_blocks if Gosu.button_down? Gosu::KB_DOWN
   end
 
   def draw

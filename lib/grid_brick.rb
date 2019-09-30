@@ -5,7 +5,7 @@ class GridBlock
 
   def initialize
     @id = "#{Time.now.to_i}_#{rand(5_000)}"
-    @block = Gosu::Image.new('media/grid_block.png')
+    @block = Gosu::Image.new('media/grid_elem.png')
     @x = @y = 0
     @active = false
   end
